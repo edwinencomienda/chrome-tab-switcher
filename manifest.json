@@ -10,5 +10,14 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "Open Tab Switcher"
+  },
+  "commands": {
+    "toggle-last-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Tab",
+        "mac": "Command+Shift+Tab"
+      },
+      "description": "Toggle between current tab and last active tab"
+    }
   }
 }
