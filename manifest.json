@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Window Switcher",
+  "version": "1.0",
+  "description": "Switch tabs and windows with customizable keyboard shortcut",
+  "permissions": ["tabs", "windows"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Open Tab Switcher"
+  }
+}

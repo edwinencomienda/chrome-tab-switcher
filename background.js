@@ -1,0 +1,1 @@
+// Background script - no longer needed for this simple extension
