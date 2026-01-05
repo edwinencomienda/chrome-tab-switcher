@@ -3,6 +3,40 @@
 <head>
   <title>Tab Switcher</title>
   <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-hover: #f5f5f5;
+      --bg-selected: #e3f2fd;
+      --bg-active: #ede7f6;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --text-placeholder: #999999;
+      --border-color: #e1e1e1;
+      --border-light: #f0f0f0;
+      --accent-selected: #2196f3;
+      --accent-active: #6a1b9a;
+      --shadow-focused: #007acc;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #2d2d2d;
+        --bg-hover: #3d3d3d;
+        --bg-selected: #0d47a1;
+        --bg-active: #4a148c;
+        --text-primary: #e0e0e0;
+        --text-secondary: #9e9e9e;
+        --text-placeholder: #757575;
+        --border-color: #404040;
+        --border-light: #333333;
+        --accent-selected: #42a5f5;
+        --accent-active: #ab47bc;
+        --shadow-focused: #42a5f5;
+      }
+    }
+
     body {
       width: 420px;
       height: 520px;
@@ -10,8 +44,8 @@
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 14px;
-      background: #ffffff;
-      color: #333;
+      background: var(--bg-primary);
+      color: var(--text-primary);
       overflow: hidden;
     }
     #container {
@@ -24,15 +58,19 @@
       width: 100%;
       padding: 12px 16px;
       border: none;
-      border-bottom: 1px solid #e1e1e1;
+      border-bottom: 1px solid var(--border-color);
       outline: none;
       font-size: 14px;
-      background: #f8f9fa;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
       box-sizing: border-box;
     }
+    #search::placeholder {
+      color: var(--text-placeholder);
+    }
     #search:focus {
-      background: #ffffff;
-      box-shadow: 0 1px 0 #007acc;
+      background: var(--bg-primary);
+      box-shadow: 0 1px 0 var(--shadow-focused);
     }
     #list {
       flex: 1;
@@ -42,24 +80,24 @@
     .tab-item {
       padding: 8px 16px;
       cursor: pointer;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--border-light);
       transition: background-color 0.1s ease;
       display: flex;
       align-items: center;
       min-height: 32px;
     }
     .tab-item:hover {
-      background: #f5f5f5;
+      background: var(--bg-hover);
     }
     .tab-item.selected {
-      background: #e3f2fd;
-      border-left: 3px solid #2196f3;
+      background: var(--bg-selected);
+      border-left: 3px solid var(--accent-selected);
       padding-left: 13px;
     }
     .tab-item.active {
       font-weight: 600;
-      background: #ede7f6;
-      border-left: 3px solid #6a1b9a;
+      background: var(--bg-active);
+      border-left: 3px solid var(--accent-active);
       padding-left: 13px;
     }
     .tab-title {
@@ -70,15 +108,31 @@
     }
     .window-label {
       font-size: 12px;
-      color: #666;
+      color: var(--text-secondary);
       margin-right: 8px;
       flex-shrink: 0;
     }
     .no-results {
       padding: 20px;
       text-align: center;
-      color: #999;
+      color: var(--text-placeholder);
       font-style: italic;
+    }
+    #footer {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    #footer kbd {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-family: monospace;
+      font-size: 11px;
+      margin: 0 2px;
     }
   </style>
 </head>
@@ -86,6 +140,9 @@
   <div id="container">
     <input type="text" id="search" placeholder="Search tabs..." autofocus>
     <div id="list"></div>
+    <div id="footer">
+      <kbd>↑</kbd> <kbd>↓</kbd> Navigate &nbsp;|&nbsp; <kbd>Enter</kbd> Select &nbsp;|&nbsp; <kbd>Esc</kbd> Close
+    </div>
   </div>
   <script src="popup.js"></script>
 </body>
