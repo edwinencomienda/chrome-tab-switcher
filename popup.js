@@ -40,7 +40,7 @@ function loadTabs() {
     allTabs = [];
     windows.forEach(function(win) {
       win.tabs.forEach(function(tab) {
-        allTabs.push({tab: tab, windowId: win.id, windowTitle: 'Window ' + win.id});
+        allTabs.push({tab: tab, windowId: win.id});
       });
     });
     // Sort by most recently accessed
@@ -74,7 +74,7 @@ function render() {
     if (item.tab.id === currentTabId) classes += ' active';
     div.className = classes;
     let favicon = item.tab.favIconUrl ? '<img src="' + item.tab.favIconUrl + '" alt="" style="width:16px;height:16px;margin-right:8px;flex-shrink:0;">' : '<div style="width:16px;height:16px;margin-right:8px;flex-shrink:0;background:#ccc;border-radius:2px;"></div>';
-    div.innerHTML = favicon + '<span class="window-label">' + item.windowTitle + '</span><span class="tab-title">' + item.tab.title + '</span>';
+    div.innerHTML = favicon + '<span class="tab-title">' + item.tab.title + '</span>';
     div.onclick = function() { select(index); };
     list.appendChild(div);
   });
