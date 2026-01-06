@@ -112,6 +112,35 @@
       color: var(--text-placeholder);
       font-style: italic;
     }
+    .pin-button {
+      padding: 4px 8px;
+      margin-left: 8px;
+      cursor: pointer;
+      opacity: 0.3;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+    .tab-item:hover .pin-button {
+      opacity: 0.6;
+    }
+    .pin-button:hover {
+      opacity: 1 !important;
+      background: var(--bg-hover);
+      transform: scale(1.1);
+    }
+    .tab-item.pinned .pin-button {
+      opacity: 1;
+      color: #ff9800; /* Orange for pinned */
+    }
+    .pin-button svg {
+      width: 16px;
+      height: 16px;
+    }
     #footer {
       padding: 8px 16px;
       border-top: 1px solid var(--border-color);
@@ -127,6 +156,13 @@
       font-family: monospace;
       font-size: 11px;
       margin: 0 2px;
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
+    #footer kbd svg {
+      width: 12px;
+      height: 12px;
     }
   </style>
 </head>
@@ -135,7 +171,7 @@
     <input type="text" id="search" placeholder="Search tabs..." autofocus>
     <div id="list"></div>
     <div id="footer">
-      <kbd>↑</kbd> <kbd>↓</kbd> Navigate &nbsp;|&nbsp; <kbd>Enter</kbd> Select &nbsp;|&nbsp; <kbd>Esc</kbd> Close
+      <kbd id="arrow-up-key"></kbd> <kbd id="arrow-down-key"></kbd> Navigate &nbsp;|&nbsp; <kbd>Enter</kbd> Select &nbsp;|&nbsp; <kbd>Esc</kbd> Close
     </div>
   </div>
   <script src="popup.js"></script>

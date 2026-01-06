@@ -3,7 +3,7 @@
   "name": "Tab Window Switcher",
   "version": "1.0",
   "description": "Switch tabs and windows with customizable keyboard shortcut",
-  "permissions": ["tabs", "windows"],
+  "permissions": ["tabs", "windows", "storage"],
   "background": {
     "service_worker": "background.js"
   },
@@ -19,5 +19,11 @@
       },
       "description": "Toggle between current tab and last active tab"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

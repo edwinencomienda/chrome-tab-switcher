@@ -3,9 +3,32 @@ let filteredTabs = [];
 let selectedIndex = 0;
 let currentWindowId;
 let currentTabId;
+let pinnedTabIds = new Set();
+let pinSvg = '';
+let pinOffSvg = '';
 
 document.addEventListener('DOMContentLoaded', function() {
-  loadTabs();
+  // Pre-load SVGs
+  Promise.all([
+    fetch('icons/pin.svg').then(r => r.text()),
+    fetch('icons/pin-off.svg').then(r => r.text()),
+    fetch('icons/arrow-up.svg').then(r => r.text()),
+    fetch('icons/arrow-down.svg').then(r => r.text())
+  ]).then(([pin, pinOff, arrowUp, arrowDown]) => {
+    pinSvg = pin;
+    pinOffSvg = pinOff;
+    
+    // Inject footer icons
+    document.getElementById('arrow-up-key').innerHTML = arrowUp;
+    document.getElementById('arrow-down-key').innerHTML = arrowDown;
+    
+    chrome.storage.local.get(['pinnedTabIds'], function(result) {
+      if (result.pinnedTabIds) {
+        pinnedTabIds = new Set(result.pinnedTabIds);
+      }
+      loadTabs();
+    });
+  });
 
   document.getElementById('search').addEventListener('input', function() {
     filterTabs();
@@ -43,8 +66,11 @@ function loadTabs() {
         allTabs.push({tab: tab, windowId: win.id});
       });
     });
-    // Sort by most recently accessed
+    // Sort: Pinned first, then by most recently accessed
     allTabs.sort(function(a, b) {
+      const aPinned = pinnedTabIds.has(a.tab.id);
+      const bPinned = pinnedTabIds.has(b.tab.id);
+      if (aPinned !== bPinned) return aPinned ? -1 : 1;
       return b.tab.lastAccessed - a.tab.lastAccessed;
     });
     filterTabs();
@@ -69,14 +95,55 @@ function render() {
   }
   filteredTabs.forEach(function(item, index) {
     let div = document.createElement('div');
+    let isPinned = pinnedTabIds.has(item.tab.id);
     let classes = 'tab-item';
     if (index === selectedIndex) classes += ' selected';
     if (item.tab.id === currentTabId) classes += ' active';
+    if (isPinned) classes += ' pinned';
     div.className = classes;
+    
     let favicon = item.tab.favIconUrl ? '<img src="' + item.tab.favIconUrl + '" alt="" style="width:16px;height:16px;margin-right:8px;flex-shrink:0;">' : '<div style="width:16px;height:16px;margin-right:8px;flex-shrink:0;background:#ccc;border-radius:2px;"></div>';
-    div.innerHTML = favicon + '<span class="tab-title">' + item.tab.title + '</span>';
+    
+    let titleSpan = document.createElement('span');
+    titleSpan.className = 'tab-title';
+    titleSpan.textContent = item.tab.title;
+
+    let pinButton = document.createElement('div');
+    pinButton.className = 'pin-button';
+    pinButton.innerHTML = isPinned ? pinSvg : pinOffSvg;
+
+    pinButton.title = isPinned ? 'Unpin tab' : 'Pin tab to top';
+    pinButton.onclick = function(e) {
+      e.stopPropagation();
+      togglePin(item.tab.id);
+    };
+
+    div.innerHTML = favicon;
+    div.appendChild(titleSpan);
+    div.appendChild(pinButton);
+    
     div.onclick = function() { select(index); };
     list.appendChild(div);
+  });
+}
+
+function togglePin(tabId) {
+  if (pinnedTabIds.has(tabId)) {
+    pinnedTabIds.delete(tabId);
+  } else {
+    pinnedTabIds.add(tabId);
+  }
+  
+  chrome.storage.local.set({pinnedTabIds: Array.from(pinnedTabIds)}, function() {
+    // Re-sort allTabs based on new pinned status
+    allTabs.sort(function(a, b) {
+      const aPinned = pinnedTabIds.has(a.tab.id);
+      const bPinned = pinnedTabIds.has(b.tab.id);
+      if (aPinned !== bPinned) return aPinned ? -1 : 1;
+      return b.tab.lastAccessed - a.tab.lastAccessed;
+    });
+    filterTabs();
+    render();
   });
 }
 
