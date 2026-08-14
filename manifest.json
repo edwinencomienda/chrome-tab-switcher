@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Window Switcher",
+  "version": "3.3",
+  "description": "Single-hotkey command palette tab switcher",
+  "permissions": ["tabs", "activeTab", "storage"],
+  "optional_host_permissions": ["<all_urls>"],
+  "background": {
+    "scripts": ["background.js"],
+    "service_worker": "background.js"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tab-window-switcher@edwinencomienda",
+      "data_collection_permissions": {
+        "required": ["none"]
+      },
+      "strict_min_version": "140.0"
+    }
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Tab Switcher",
+    "default_icons": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "commands": {
+    "open-and-cycle": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Open tab switcher and cycle"
+    }
+  }
+}

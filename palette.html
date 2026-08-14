@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tab Switcher</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f5;
+      --bg-hover: #ececec;
+      --bg-selected: #e3f2fd;
+      --bg-kbd: #ffffff;
+      --border: #e1e1e1;
+      --border-strong: #cccccc;
+      --text-primary: #222222;
+      --text-secondary: #666666;
+      --text-placeholder: #999999;
+      --accent: #2196f3;
+      --favicon-fallback: #cccccc;
+      --preview-bg: #e8eaed;
+      --bg-pinned: rgba(33, 150, 243, 0.06);
+      --badge-bg: #2196f3;
+      --badge-text: #ffffff;
+      --pin-scrim: rgba(0, 0, 0, 0.42);
+      --pin-scrim-hover: rgba(0, 0, 0, 0.62);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #2d2d2d;
+        --bg-hover: #3d3d3d;
+        --bg-selected: #0d47a1;
+        --bg-kbd: #1e1e1e;
+        --border: #404040;
+        --border-strong: #555555;
+        --text-primary: #e0e0e0;
+        --text-secondary: #9e9e9e;
+        --text-placeholder: #757575;
+        --accent: #42a5f5;
+        --favicon-fallback: #555555;
+        --preview-bg: #252525;
+        --bg-pinned: rgba(66, 165, 245, 0.10);
+        --badge-bg: #42a5f5;
+        --badge-text: #10233a;
+        --pin-scrim: rgba(0, 0, 0, 0.5);
+        --pin-scrim-hover: rgba(0, 0, 0, 0.7);
+      }
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+    }
+    #modal {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #search {
+      width: 100%;
+      padding: 16px 20px;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      outline: none;
+      font-size: 16px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      box-sizing: border-box;
+    }
+    #search::placeholder { color: var(--text-placeholder); }
+    #list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .item {
+      padding: 10px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+      border-left: 3px solid transparent;
+      font-size: 14px;
+      gap: 10px;
+      transition: background 110ms ease, border-color 110ms ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .item, #list.tiles .item, .thumb img.shot { transition: none !important; }
+    }
+    .item:hover {
+      background: var(--bg-hover);
+      border-left-color: var(--border-strong);
+    }
+    .item.selected {
+      background: var(--bg-selected);
+      border-left-color: var(--accent);
+    }
+    .item.selected:hover { border-left-color: var(--accent); }
+    .item.active { font-weight: 600; }
+    /* "Current" marker for the tab the switcher was opened from. */
+    .badge-current {
+      flex: none;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      line-height: 1.4;
+    }
+    #list.tiles .badge-current {
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+    }
+    .favicon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      background: var(--favicon-fallback);
+      border-radius: 2px;
+    }
+    .title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .url {
+      color: var(--text-secondary);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 40%;
+    }
+    /* Pin control: quiet until you hover the row/tile, always shown once
+       pinned so the state is readable at a glance. */
+    .pin {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      flex: none;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-placeholder);
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
+    }
+    .pin svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+    }
+    .pin:hover { color: var(--text-primary); background: var(--bg-hover); }
+    .item:hover .pin,
+    .item.selected .pin,
+    .pin:focus-visible { opacity: 1; }
+    .item.pinned .pin {
+      opacity: 1;
+      color: var(--accent);
+    }
+    .pin:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    /* Pinned rows get a quiet accent tint so the group reads as one block. */
+    .item.pinned { background: var(--bg-pinned); }
+    .item.pinned.selected { background: var(--bg-selected); }
+    #list.tiles .pin {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: var(--pin-scrim);
+      color: #ffffff;
+      backdrop-filter: blur(6px);
+    }
+    #list.tiles .pin:hover { background: var(--pin-scrim-hover); }
+    #list.tiles .item.pinned .pin { color: #ffffff; background: var(--accent); }
+    #list.tiles .item.pinned { background: var(--bg-pinned); }
+    #list.tiles .item.pinned.selected { background: var(--bg-hover); }
+
+    .empty {
+      padding: 30px;
+      text-align: center;
+      color: var(--text-placeholder);
+      font-style: italic;
+    }
+    /* Tile view: each item is a self-contained card — a fixed-ratio thumbnail
+       above a meta row — so rows can't collapse to list height. */
+    #list.tiles {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      /* Explicit row height: the cards clip their overflow, so auto rows would
+         stretch to fill the scroller and squash the tiles. */
+      grid-auto-rows: 168px;
+      align-content: start;
+      gap: 12px;
+      padding: 12px;
+    }
+    #list.tiles .item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      min-height: 0;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-left-width: 1px;
+      border-radius: 10px;
+      background: var(--bg-secondary);
+    }
+    #list.tiles .item {
+      transition: background 130ms ease, border-color 130ms ease,
+                  box-shadow 130ms ease, transform 130ms ease;
+    }
+    #list.tiles .item:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      transform: translateY(-1px);
+    }
+    /* The thumbnail eases in a touch on hover — the card is the affordance. */
+    #list.tiles .item:hover .thumb img.shot { transform: scale(1.03); }
+    #list.tiles .item.selected {
+      background: var(--bg-hover);
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    #list.tiles .item.selected:hover {
+      box-shadow: inset 0 0 0 2px var(--accent), 0 4px 12px rgba(0, 0, 0, 0.18);
+    }
+    .thumb {
+      position: relative;
+      flex: none;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: var(--preview-bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .thumb img.shot {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    /* No screenshot yet: show the site's own mark instead of an empty box. */
+    .thumb.fallback {
+      display: grid;
+      place-items: center;
+    }
+    .thumb.fallback img.mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+    }
+    .thumb.fallback .letter {
+      color: var(--text-secondary);
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      align-items: center;
+      gap: 3px 8px;
+      padding: 8px 10px 9px;
+    }
+    #list.tiles .favicon { grid-row: 1; }
+    #list.tiles .title {
+      grid-row: 1;
+      flex: none;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    #list.tiles .url {
+      grid-column: 2;
+      grid-row: 2;
+      max-width: none;
+      font-size: 11px;
+    }
+    #list.tiles .item.selected .title { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+  <div id="modal">
+    <input type="text" id="search" placeholder="Search tabs..." autofocus>
+    <div id="list"></div>
+  </div>
+  <script src="palette.js"></script>
+</body>
+</html>
