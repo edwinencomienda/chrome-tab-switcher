@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icons/icon-source.png" width="120" alt="Tab Window Switcher logo">
+</p>
+
 # Tab Window Switcher
 
 A fast keyboard switcher for tabs across all Chrome windows. Search, preview, pin, and open tabs without reaching for the mouse.
