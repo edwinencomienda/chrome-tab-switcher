@@ -345,6 +345,48 @@ function buildPinButton(item) {
   return button;
 }
 
+// Measured once per tab, then reused across re-renders.
+const previewTone = {};
+// Above this average luminance (0-255) the corner counts as a light surface.
+const LIGHT_THRESHOLD = 150;
+
+function applyTone(thumb, tone) {
+  if (!tone) return;
+  thumb.classList.toggle('on-light', tone === 'light');
+}
+
+// Average the luminance of the corner the pin sits in, off a downscaled copy
+// of the screenshot. Data URLs are same-origin, so the canvas stays readable.
+function measureTone(img, tabId) {
+  if (previewTone[tabId]) return previewTone[tabId];
+  try {
+    const w = 32;
+    const h = 20;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const fromX = Math.round(w * 0.55);
+    const data = ctx.getImageData(fromX, 0, w - fromX, Math.round(h * 0.4)).data;
+    let total = 0;
+    let pixels = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      total += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      pixels++;
+    }
+    if (!pixels) return null;
+
+    const tone = total / pixels > LIGHT_THRESHOLD ? 'light' : 'dark';
+    previewTone[tabId] = tone;
+    return tone;
+  } catch (_) {
+    // Unreadable canvas — keep the default dark scrim, which works either way.
+    return null;
+  }
+}
+
 // Screenshot if we have one, otherwise a tile built from the site's favicon
 // (falling back to the first letter of the title).
 function buildThumb(item) {
@@ -358,6 +400,13 @@ function buildThumb(item) {
     shot.src = preview.dataUrl;
     shot.alt = '';
     thumb.appendChild(shot);
+    // Overlay controls sit on the screenshot, whose brightness varies per
+    // page — measure it so they can flip between a light and dark treatment.
+    const known = previewTone[item.id];
+    if (known) applyTone(thumb, known);
+    shot.addEventListener('load', function() {
+      applyTone(thumb, measureTone(shot, item.id));
+    });
     return thumb;
   }
 

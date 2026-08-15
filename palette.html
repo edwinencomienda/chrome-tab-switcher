@@ -181,6 +181,15 @@
       backdrop-filter: blur(6px);
     }
     #list.tiles .pin:hover { background: var(--pin-scrim-hover); }
+    /* On a light screenshot the dark scrim reads as a smudge — flip to a light
+       plate with a dark glyph. Measured from the image in palette.js. */
+    #list.tiles .item:not(.pinned) .thumb.on-light .pin {
+      background: rgba(255, 255, 255, 0.82);
+      color: #1c1c1e;
+    }
+    #list.tiles .item:not(.pinned) .thumb.on-light .pin:hover {
+      background: #ffffff;
+    }
     #list.tiles .item.pinned .pin { color: #ffffff; background: var(--accent); }
     #list.tiles .item.pinned { background: var(--bg-pinned); }
     #list.tiles .item.pinned.selected { background: var(--bg-hover); }
