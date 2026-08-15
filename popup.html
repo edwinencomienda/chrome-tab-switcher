@@ -14,8 +14,8 @@
       --muted: #696f79;
       --faint: #9298a2;
       --line: rgba(22, 27, 35, 0.09);
-      --accent: #1478f2;
-      --accent-soft: rgba(20, 120, 242, 0.11);
+      --accent: #dc6748;
+      --accent-soft: rgba(237, 123, 89, 0.14);
       --key: #f4f5f7;
       --shadow: 0 12px 34px rgba(26, 32, 44, 0.14);
     }
@@ -29,8 +29,8 @@
         --muted: #a7adb7;
         --faint: #737985;
         --line: rgba(255, 255, 255, 0.09);
-        --accent: #5aa7ff;
-        --accent-soft: rgba(90, 167, 255, 0.14);
+        --accent: #f08a6b;
+        --accent-soft: rgba(237, 123, 89, 0.16);
         --key: #33373e;
         --shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
       }
@@ -72,15 +72,11 @@
     .mark {
       display: grid;
       place-items: center;
-      width: 32px;
+      width: 34px;
       height: 32px;
-      border-radius: 10px;
-      background: linear-gradient(145deg, #56a9ff, #0870ed);
-      color: #fff;
-      box-shadow: 0 7px 18px rgba(20, 120, 242, 0.28);
     }
 
-    .mark svg { width: 17px; height: 17px; }
+    .mark img { display: block; width: 34px; height: 32px; object-fit: contain; }
     .head h1 { margin: 0; font-size: 14px; font-weight: 680; letter-spacing: -0.02em; }
     .head p { margin: 1px 0 0; color: var(--muted); font-size: 10.5px; }
 
@@ -97,8 +93,8 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #35c56f;
-      box-shadow: 0 0 0 3px rgba(53, 197, 111, 0.12);
+      background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     .card {
@@ -299,10 +295,7 @@
     <header class="head">
       <div class="brand">
         <span class="mark" aria-hidden="true">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2.5 5.5h6l2-2h3"/><path d="M11 1.5l2.5 2-2.5 2"/>
-            <path d="M13.5 10.5h-3l-2-2h-6"/><path d="M11 8.5l2.5 2-2.5 2"/>
-          </svg>
+          <img src="icons/icon-source.png" alt="">
         </span>
         <div><h1>Tab Switcher</h1><p>Move at the speed of thought</p></div>
       </div>
