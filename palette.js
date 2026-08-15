@@ -409,7 +409,10 @@ function render() {
 
     const fav = document.createElement('img');
     fav.className = 'favicon';
+    // Keep the slot (titles stay aligned) but show nothing when there is no
+    // icon — an empty <img> renders as a broken-image box.
     if (item.favIconUrl) fav.src = item.favIconUrl;
+    else fav.style.visibility = 'hidden';
     fav.onerror = function() { fav.style.visibility = 'hidden'; };
 
     const title = document.createElement('span');

@@ -15,7 +15,6 @@
       --text-secondary: #666666;
       --text-placeholder: #999999;
       --accent: #2196f3;
-      --favicon-fallback: #cccccc;
       --preview-bg: #e8eaed;
       --bg-pinned: rgba(33, 150, 243, 0.06);
       --badge-bg: #2196f3;
@@ -36,7 +35,6 @@
         --text-secondary: #9e9e9e;
         --text-placeholder: #757575;
         --accent: #42a5f5;
-        --favicon-fallback: #555555;
         --preview-bg: #252525;
         --bg-pinned: rgba(66, 165, 245, 0.10);
         --badge-bg: #42a5f5;
@@ -118,12 +116,13 @@
       left: 6px;
       bottom: 6px;
     }
+    /* No plate behind the icon: many favicons are transparent and a grey
+       square shows through them. */
     .favicon {
       width: 16px;
       height: 16px;
       flex-shrink: 0;
-      background: var(--favicon-fallback);
-      border-radius: 2px;
+      object-fit: contain;
     }
     .title {
       flex: 1;
