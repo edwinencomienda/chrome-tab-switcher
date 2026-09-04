@@ -162,6 +162,19 @@
 
     .view-block { margin-top: 12px; padding: 13px; }
 
+    .position-block {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 12px;
+      padding: 13px 14px;
+    }
+
+    .position-copy { min-width: 0; }
+    .position-copy .eyebrow { margin-bottom: 4px; }
+    .position-copy p { margin: 0; color: var(--muted); font-size: 10.5px; }
+
     .section-head {
       display: flex;
       align-items: baseline;
@@ -327,6 +340,14 @@
       </div>
       <p class="hint" id="view-hint">Page previews stay on this device and clear with your browser session.</p>
       <p class="hint grid-hint">Use all four arrow keys. While searching, hold <kbd>⇧</kbd> to move between tiles.</p>
+    </section>
+
+    <section class="card position-block" aria-labelledby="position-label">
+      <div class="position-copy">
+        <span class="eyebrow" id="position-label">Window position</span>
+        <p>Remember where you last placed the switcher.</p>
+      </div>
+      <button class="link" type="button" id="reset-position">Reset</button>
     </section>
 
     <section class="guide" aria-labelledby="guide-label">

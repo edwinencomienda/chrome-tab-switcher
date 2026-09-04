@@ -2,6 +2,7 @@ let paletteWindowId = null;
 let paletteTabId = null;
 let switching = false;
 const MAX_PREVIEWS = 20;
+const PALETTE_POSITION_KEY = 'palettePosition';
 // captureVisibleTab is rate limited when called without a user gesture.
 const CAPTURE_SPACING_MS = 600;
 let captureTimer = null;
@@ -119,6 +120,38 @@ chrome.windows.onRemoved.addListener(function(windowId) {
   }
 });
 
+// Remember where the palette was last dragged. Only the palette window is
+// tracked, so moving a regular Chrome window never changes this preference.
+if (chrome.windows.onBoundsChanged) {
+  chrome.windows.onBoundsChanged.addListener(function(win) {
+    if (!win || typeof win.id !== 'number') return;
+    if (win.id === paletteWindowId) {
+      savePalettePosition(win);
+      return;
+    }
+
+    // The service worker may have restarted, clearing paletteWindowId. Find
+    // the palette tab so position saving still works in that case.
+    chrome.tabs.query({ windowId: win.id }, function(tabs) {
+      if (chrome.runtime.lastError || !tabs || !tabs.some(isPaletteTab)) return;
+      paletteWindowId = win.id;
+      savePalettePosition(win);
+    });
+  });
+}
+
+function isPaletteTab(tab) {
+  const paletteUrl = chrome.runtime.getURL('palette.html');
+  return (tab.url || '').split('?')[0] === paletteUrl;
+}
+
+function savePalettePosition(win) {
+  if (typeof win.left !== 'number' || typeof win.top !== 'number') return;
+  chrome.storage.local.set({
+    [PALETTE_POSITION_KEY]: { left: win.left, top: win.top }
+  });
+}
+
 chrome.tabs.onRemoved.addListener(function(tabId) {
   chrome.storage.session.get({ tabPreviews: {} }, function(result) {
     const previews = result.tabPreviews || {};
@@ -139,6 +172,11 @@ chrome.windows.onFocusChanged.addListener(function(windowId) {
 });
 
 chrome.runtime.onMessage.addListener(function(msg) {
+  if (msg.type === 'reset-position') {
+    chrome.storage.local.remove(PALETTE_POSITION_KEY);
+    return;
+  }
+
   if (msg.type === 'switch-tab') {
     switching = true;
     chrome.tabs.update(msg.tabId, { active: true }, function() {
@@ -202,20 +240,31 @@ function createPaletteWindow(openerTabId) {
   const w = 640;
   const h = 520;
 
-  chrome.windows.getLastFocused({ populate: false }, function(parent) {
-    let left, top;
-    if (parent && typeof parent.left === 'number') {
-      left = Math.round(parent.left + (parent.width - w) / 2);
-      top = Math.round(parent.top + (parent.height - h) / 2);
-    }
-    const opts = { url: url, type: 'popup', width: w, height: h, focused: true };
-    if (typeof left === 'number') opts.left = left;
-    if (typeof top === 'number') opts.top = top;
+  chrome.storage.local.get({ [PALETTE_POSITION_KEY]: null }, function(settings) {
+    const saved = settings && settings[PALETTE_POSITION_KEY];
+    const hasSavedPosition = saved
+      && typeof saved.left === 'number'
+      && typeof saved.top === 'number';
 
-    chrome.windows.create(opts, function(win) {
-      if (!win) return;
-      paletteWindowId = win.id;
-      paletteTabId = win.tabs && win.tabs[0] && win.tabs[0].id;
+    chrome.windows.getLastFocused({ populate: false }, function(parent) {
+      let left, top;
+      if (hasSavedPosition) {
+        left = Math.round(saved.left);
+        top = Math.round(saved.top);
+      } else if (parent && typeof parent.left === 'number') {
+        left = Math.round(parent.left + (parent.width - w) / 2);
+        // Keep the palette near the top while leaving a comfortable margin.
+        top = Math.round(parent.top + (parent.height - h) / 4);
+      }
+      const opts = { url: url, type: 'popup', width: w, height: h, focused: true };
+      if (typeof left === 'number') opts.left = left;
+      if (typeof top === 'number') opts.top = top;
+
+      chrome.windows.create(opts, function(win) {
+        if (!win) return;
+        paletteWindowId = win.id;
+        paletteTabId = win.tabs && win.tabs[0] && win.tabs[0].id;
+      });
     });
   });
 }

@@ -11,10 +11,12 @@
       --bg-kbd: #ffffff;
       --border: #e1e1e1;
       --border-strong: #cccccc;
+      --border-hover: #b8b8b8;
       --text-primary: #222222;
       --text-secondary: #666666;
       --text-placeholder: #999999;
       --accent: #2196f3;
+      --active-border: #EA7B5A;
       --preview-bg: #e8eaed;
       --bg-pinned: rgba(33, 150, 243, 0.06);
       --badge-bg: #2196f3;
@@ -31,6 +33,7 @@
         --bg-kbd: #1e1e1e;
         --border: #404040;
         --border-strong: #555555;
+        --border-hover: #686868;
         --text-primary: #e0e0e0;
         --text-secondary: #9e9e9e;
         --text-placeholder: #757575;
@@ -94,9 +97,9 @@
     }
     .item.selected {
       background: var(--bg-selected);
-      border-left-color: var(--accent);
+      border-left-color: var(--active-border);
     }
-    .item.selected:hover { border-left-color: var(--accent); }
+    .item.selected:hover { border-left-color: var(--active-border); }
     .item.active { font-weight: 600; }
     /* "Current" marker for the tab the switcher was opened from. */
     .badge-current {
@@ -230,7 +233,7 @@
     }
     #list.tiles .item:hover {
       background: var(--bg-hover);
-      border-color: var(--border-strong);
+      border-color: var(--border-hover);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
       transform: translateY(-1px);
     }
@@ -238,11 +241,11 @@
     #list.tiles .item:hover .thumb img.shot { transform: scale(1.03); }
     #list.tiles .item.selected {
       background: var(--bg-hover);
-      border-color: var(--accent);
-      box-shadow: inset 0 0 0 2px var(--accent);
+      border: 3px solid var(--active-border);
+      box-shadow: none;
     }
     #list.tiles .item.selected:hover {
-      box-shadow: inset 0 0 0 2px var(--accent), 0 4px 12px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
     }
     .thumb {
       position: relative;

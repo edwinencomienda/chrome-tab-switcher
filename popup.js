@@ -84,4 +84,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
   });
+
+  document.getElementById('reset-position').addEventListener('click', function() {
+    chrome.runtime.sendMessage({ type: 'reset-position' });
+  });
 });

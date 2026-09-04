@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const search = document.getElementById('search');
   search.addEventListener('input', function() {
     cycleCount = 0;
+    // A new query is a new list — restart from the top so the highlight never
+    // sits mid-list or out of range after filtering.
+    selectedIndex = 0;
     filterTabs();
     render();
   });
@@ -200,27 +203,80 @@ function togglePin(item) {
   render();
 }
 
-// Tile view is a real grid, so up/down should move a whole row.
-function columnCount() {
+// Tile view is a real grid, so up/down should move a whole row. The column
+// count is measured from the laid-out tiles (not the CSS string), so it stays
+// right across resizes, scrollbars, and partial last rows.
+function gridColumnCount() {
   if (viewMode !== 'tiles') return 1;
   const list = document.getElementById('list');
-  const columns = getComputedStyle(list).gridTemplateColumns;
-  const count = columns && columns !== 'none' ? columns.split(' ').length : 1;
-  return Math.max(1, count);
+  const items = list ? list.querySelectorAll('.item') : null;
+  if (items && items.length > 1) {
+    const firstTop = items[0].getBoundingClientRect().top;
+    const TOLERANCE_PX = 4;
+    let count = 0;
+    for (let i = 0; i < items.length; i++) {
+      if (Math.abs(items[i].getBoundingClientRect().top - firstTop) <= TOLERANCE_PX) count++;
+      else break;
+    }
+    if (count >= 1) return count;
+  } else if (items && items.length === 1) {
+    return 1;
+  }
+  // Fallback before first layout: parse the resolved grid track list.
+  if (list) {
+    const columns = getComputedStyle(list).gridTemplateColumns;
+    if (columns && columns !== 'none') {
+      const count = columns.split(/\s+/).filter(Boolean).length;
+      if (count >= 1) return count;
+    }
+  }
+  return 1;
 }
 
-function moveByRow(delta) {
-  if (filteredTabs.length === 0) return;
-  const columns = columnCount();
-  const target = selectedIndex + delta * columns;
-  if (target < 0) {
-    // Already on the top row: step to the first tab rather than doing nothing.
+// Clamp a stale index back into range (filtering or tab closes can shrink the
+// list under the selection).
+function normalizeSelection() {
+  if (filteredTabs.length === 0) {
     selectedIndex = 0;
-  } else if (target >= filteredTabs.length) {
-    selectedIndex = filteredTabs.length - 1;
-  } else {
-    selectedIndex = target;
+    return;
   }
+  if (!Number.isInteger(selectedIndex)) selectedIndex = 0;
+  selectedIndex = ((selectedIndex % filteredTabs.length) + filteredTabs.length) % filteredTabs.length;
+}
+
+function moveHorizontal(delta) {
+  if (filteredTabs.length === 0) return;
+  normalizeSelection();
+  selectedIndex = (selectedIndex + delta + filteredTabs.length) % filteredTabs.length;
+  updateSelection(true);
+}
+
+function moveVertical(delta) {
+  if (filteredTabs.length === 0) return;
+  normalizeSelection();
+  const columns = gridColumnCount();
+  if (columns <= 1) {
+    moveHorizontal(delta);
+    return;
+  }
+  const len = filteredTabs.length;
+  const rows = Math.ceil(len / columns);
+  if (rows <= 1) {
+    // Single row: up goes to the first tile, down to the last.
+    selectedIndex = delta < 0 ? 0 : len - 1;
+    updateSelection(true);
+    return;
+  }
+  const row = Math.floor(selectedIndex / columns);
+  const col = selectedIndex % columns;
+  const newRow = (((row + delta) % rows) + rows) % rows;
+  let target = newRow * columns + col;
+  if (target >= len) {
+    // The last row is short and has no tile in this column — land on the
+    // nearest tile instead of staying put.
+    target = len - 1;
+  }
+  selectedIndex = target;
   updateSelection(true);
 }
 
@@ -231,6 +287,7 @@ function caretCanMove(direction) {
   if (!search || document.activeElement !== search) return false;
   const value = search.value || '';
   if (!value) return false;
+  if (search.selectionStart == null || search.selectionEnd == null) return false;
   if (search.selectionStart !== search.selectionEnd) return true;
   return direction < 0 ? search.selectionStart > 0 : search.selectionStart < value.length;
 }
@@ -242,23 +299,40 @@ function handleKeydown(e) {
   const forceNav = e.shiftKey;
   if (e.key === 'ArrowDown') {
     cycleCount = 0;
-    if (grid) moveByRow(1); else cycleNext();
+    if (grid) moveVertical(1); else moveHorizontal(1);
     e.preventDefault();
   } else if (e.key === 'ArrowUp') {
     cycleCount = 0;
-    if (grid) moveByRow(-1); else cyclePrev();
+    if (grid) moveVertical(-1); else moveHorizontal(-1);
     e.preventDefault();
   } else if (e.key === 'ArrowRight' && grid && (forceNav || !caretCanMove(1))) {
     cycleCount = 0;
-    cycleNext();
+    moveHorizontal(1);
     e.preventDefault();
   } else if (e.key === 'ArrowLeft' && grid && (forceNav || !caretCanMove(-1))) {
     cycleCount = 0;
-    cyclePrev();
+    moveHorizontal(-1);
+    e.preventDefault();
+  } else if (e.key === 'Home') {
+    cycleCount = 0;
+    if (filteredTabs.length > 0) {
+      selectedIndex = 0;
+      updateSelection(true);
+    }
+    e.preventDefault();
+  } else if (e.key === 'End') {
+    cycleCount = 0;
+    if (filteredTabs.length > 0) {
+      selectedIndex = filteredTabs.length - 1;
+      updateSelection(true);
+    }
     e.preventDefault();
   } else if ((e.metaKey || e.ctrlKey) && (e.key === 'p' || e.key === 'P')) {
     const item = filteredTabs[selectedIndex];
     if (item) togglePin(item);
+    e.preventDefault();
+  } else if (e.metaKey && (e.key === 'w' || e.key === 'W')) {
+    closeSelectedTab();
     e.preventDefault();
   } else if (e.key === 'Enter') {
     selectCurrent();
@@ -278,21 +352,18 @@ function handleKeyup(e) {
 }
 
 function cycleNext() {
-  if (filteredTabs.length === 0) return;
-  selectedIndex = (selectedIndex + 1) % filteredTabs.length;
-  updateSelection(true);
+  moveHorizontal(1);
 }
 
 function cyclePrev() {
-  if (filteredTabs.length === 0) return;
-  selectedIndex = (selectedIndex - 1 + filteredTabs.length) % filteredTabs.length;
-  updateSelection(true);
+  moveHorizontal(-1);
 }
 
 // Move the highlight without rebuilding the list — a full render would reload
 // every preview image and flicker.
 function updateSelection(scroll) {
-  const items = document.getElementById('list').children;
+  normalizeSelection();
+  const items = document.getElementById('list').querySelectorAll('.item');
   for (let i = 0; i < items.length; i++) {
     items[i].classList.toggle('selected', i === selectedIndex);
   }
@@ -306,7 +377,25 @@ function filterTabs() {
   filteredTabs = allTabs.filter(function(item) {
     return item.title.toLowerCase().includes(q) || item.url.toLowerCase().includes(q);
   });
-  if (selectedIndex >= filteredTabs.length) selectedIndex = 0;
+  // Background re-renders (previews, pins) must not move the highlight — just
+  // clamp a stale index into range. Search typing resets to 0 explicitly.
+  if (filteredTabs.length === 0) selectedIndex = 0;
+  else if (selectedIndex >= filteredTabs.length) selectedIndex = filteredTabs.length - 1;
+  else if (selectedIndex < 0) selectedIndex = 0;
+}
+
+function closeSelectedTab() {
+  const item = filteredTabs[selectedIndex];
+  if (!item) return;
+  const closedIndex = selectedIndex;
+
+  chrome.tabs.remove(item.id, function() {
+    if (chrome.runtime.lastError) return;
+    allTabs = allTabs.filter(function(tab) { return tab.id !== item.id; });
+    filterTabs();
+    selectedIndex = Math.max(0, Math.min(closedIndex, filteredTabs.length - 1));
+    render();
+  });
 }
 
 const PIN_ICON = 'M9.2 1.6l5.2 5.2-1.3 1.3-1-.3-2.6 2.6.2 2.2-1.2 1.2-3-3L2 14l-.4-.4 3.2-3.5-3-3L3 5.9l2.2.2 2.6-2.6-.3-1z';
