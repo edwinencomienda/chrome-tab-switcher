@@ -29,7 +29,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   chrome.storage.local.get({ viewMode: 'tiles' }, function(settings) {
-    setActiveView(settings.viewMode === 'tiles' ? 'tiles' : 'list');
+    const view = settings.viewMode === 'list' || settings.viewMode === 'preview' ? settings.viewMode : 'tiles';
+    setActiveView(view);
   });
 
   viewOptions.forEach(function(option) {
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const view = option.dataset.view;
       chrome.storage.local.set({ viewMode: view });
       setActiveView(view);
-      if (view === 'tiles') ensurePreviewPermission();
+      if (view === 'tiles' || view === 'preview') ensurePreviewPermission();
     });
   });
 

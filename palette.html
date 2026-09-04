@@ -301,6 +301,62 @@
       font-size: 11px;
     }
     #list.tiles .item.selected .title { color: var(--text-primary); }
+    /* Preview list: one row per tab — a big thumbnail on the left and the
+       text stacked on the right. Single column, so arrows behave like the
+       plain list (up/down move, left/right edit the search). */
+    #list.preview { padding: 8px 10px; }
+    #list.preview .item {
+      align-items: center;
+      gap: 10px;
+      min-height: 0;
+      margin-bottom: 6px;
+      padding: 6px 12px 6px 6px;
+      border: 1px solid var(--border);
+      border-left-width: 3px;
+      border-radius: 10px;
+      background: var(--bg-secondary);
+    }
+    #list.preview .item:hover { border-color: var(--border-hover); }
+    #list.preview .item.selected {
+      background: var(--bg-hover);
+      border: 3px solid var(--active-border);
+      box-shadow: none;
+    }
+    #list.preview .item.selected:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    }
+    #list.preview .thumb {
+      width: 120px;
+      flex: none;
+      align-self: center;
+      border: 1px solid var(--border);
+      border-bottom-width: 1px;
+      border-radius: 8px;
+    }
+    #list.preview .pbody {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      min-width: 0;
+    }
+    #list.preview .prow-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    #list.preview .prow-top .title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    #list.preview .prow-top .favicon {
+      width: 22px;
+      height: 22px;
+    }
+    #list.preview .pbody .url { max-width: none; }
+    #list.preview .item .pin { margin-left: auto; }
   </style>
 </head>
 <body>

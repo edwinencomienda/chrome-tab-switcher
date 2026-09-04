@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener(function(changes, area) {
       if (area !== 'session' || !changes.tabPreviews) return;
-      if (viewMode !== 'tiles') return;
+      if (viewMode === 'list') return;
       tabPreviews = changes.tabPreviews.newValue || {};
       render();
     });
@@ -84,11 +84,17 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+// The popup only ever writes one of the three known modes — anything else
+// falls back to tiles.
+function normalizeViewMode(value) {
+  return value === 'list' || value === 'preview' ? value : 'tiles';
+}
+
 // Never let a settings/preview read block the tab list: it renders on its own,
 // then re-renders if a view mode or previews arrive.
 function loadViewSettings() {
   safeStorageGet('local', { viewMode: 'tiles', pinnedUrls: [] }, function(settings) {
-    viewMode = settings.viewMode === 'tiles' ? 'tiles' : 'list';
+    viewMode = normalizeViewMode(settings.viewMode);
     pinnedUrls = Array.isArray(settings.pinnedUrls) ? settings.pinnedUrls : [];
     // Pins can land after the tabs did, which re-sorts the list under the
     // selection — re-anchor it on the tab it was already pointing at.
@@ -98,7 +104,7 @@ function loadViewSettings() {
       if (!selected) selectedIndex = initialSelection();
     }
     render();
-    if (viewMode !== 'tiles') return;
+    if (viewMode === 'list') return;
     safeStorageGet('session', { tabPreviews: {} }, function(session) {
       tabPreviews = session.tabPreviews || {};
       render();
@@ -522,7 +528,7 @@ function buildThumb(item) {
 
 function render() {
   const list = document.getElementById('list');
-  list.className = viewMode === 'tiles' ? 'tiles' : '';
+  list.className = viewMode === 'tiles' ? 'tiles' : (viewMode === 'preview' ? 'preview' : '');
   list.innerHTML = '';
   if (!tabsLoaded) return;
   if (filteredTabs.length === 0) {
@@ -543,6 +549,8 @@ function render() {
       thumb.appendChild(pin);
       if (item.active) thumb.appendChild(currentBadge());
       div.appendChild(thumb);
+    } else if (viewMode === 'preview') {
+      div.appendChild(buildThumb(item));
     }
 
     const fav = document.createElement('img');
@@ -568,6 +576,19 @@ function render() {
       meta.appendChild(title);
       meta.appendChild(url);
       div.appendChild(meta);
+    } else if (viewMode === 'preview') {
+      // Big thumbnail on the left, text stacked on the right.
+      const body = document.createElement('div');
+      body.className = 'pbody';
+      const top = document.createElement('div');
+      top.className = 'prow-top';
+      top.appendChild(fav);
+      top.appendChild(title);
+      if (item.active) top.appendChild(currentBadge());
+      body.appendChild(top);
+      body.appendChild(url);
+      div.appendChild(body);
+      div.appendChild(pin);
     } else {
       div.appendChild(fav);
       div.appendChild(title);

@@ -8,8 +8,8 @@ const CAPTURE_SPACING_MS = 600;
 let captureTimer = null;
 
 // Capturing a tab needs either the gesture-scoped activeTab grant (opener tab
-// only) or the optional <all_urls> host permission (any tab, so tiles can fill
-// in as you browse). The popup asks for it when tile view is enabled.
+// only) or the optional <all_urls> host permission (any tab, so thumbnail
+// views can fill in as you browse). The popup asks for it when needed.
 function hasBroadCapture(callback) {
   if (!chrome.permissions) {
     callback(false);
@@ -20,11 +20,13 @@ function hasBroadCapture(callback) {
   });
 }
 
-// Previews cost a screenshot per tab change, so only take them when tile view
-// is actually selected and we're allowed to capture any tab.
+// Previews cost a screenshot per tab change, so only take them when a
+// thumbnail view (tiles or preview list) is actually selected and we're
+// allowed to capture any tab.
 function previewsEnabled(callback) {
   chrome.storage.local.get({ viewMode: 'tiles' }, function(settings) {
-    if (chrome.runtime.lastError || !settings || settings.viewMode !== 'tiles') {
+    if (chrome.runtime.lastError || !settings
+      || (settings.viewMode !== 'tiles' && settings.viewMode !== 'preview')) {
       callback(false);
       return;
     }
@@ -66,8 +68,8 @@ function cacheActiveTabPreview(windowId, tabId, done) {
   }
 }
 
-// Keep previews fresh as the user browses, so tile view has something to show
-// for tabs other than the one the switcher was opened from.
+// Keep previews fresh as the user browses, so thumbnail views have something
+// to show for tabs other than the one the switcher was opened from.
 function captureCurrentTabSoon() {
   if (captureTimer !== null) clearTimeout(captureTimer);
   captureTimer = setTimeout(function() {
@@ -221,7 +223,8 @@ function openPaletteWindow() {
     const openerTabId = activeTabs[0] ? activeTabs[0].id : -1;
     const openerWindowId = activeTabs[0] ? activeTabs[0].windowId : null;
     chrome.storage.local.get({ viewMode: 'tiles' }, function(settings) {
-      if (chrome.runtime.lastError || !settings || settings.viewMode !== 'tiles') {
+      if (chrome.runtime.lastError || !settings
+        || (settings.viewMode !== 'tiles' && settings.viewMode !== 'preview')) {
         createPaletteWindow(openerTabId);
         return;
       }
