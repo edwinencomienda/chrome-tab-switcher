@@ -4,6 +4,7 @@ let selectedIndex = 0;
 let cycleCount = 0;
 let openCombo = null;
 let openerTabId = null;
+let openerWindowId = null;
 let viewMode = 'tiles';
 let tabPreviews = {};
 let tabsLoaded = false;
@@ -44,6 +45,7 @@ function comboModifierStillHeld(combo, e) {
 document.addEventListener('DOMContentLoaded', function() {
   const params = new URLSearchParams(location.search);
   openerTabId = parseInt(params.get('opener'), 10) || null;
+  openerWindowId = parseInt(params.get('window'), 10) || null;
 
   chrome.commands.getAll(function(commands) {
     const cmd = (commands || []).find(function(c) { return c.name === 'open-and-cycle'; });
@@ -66,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('keydown', handleKeydown, true);
   window.addEventListener('keyup', handleKeyup, true);
 
-  // Previews for other windows arrive shortly after the palette opens.
+  // Preview updates can arrive while the palette is open.
   if (chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener(function(changes, area) {
       if (area !== 'session' || !changes.tabPreviews) return;
@@ -126,45 +128,38 @@ function safeStorageGet(area, defaults, callback) {
 }
 
 function loadTabs() {
-  chrome.windows.getAll({ populate: true }, function(windows) {
-    chrome.windows.getCurrent(function(currentWin) {
-      const paletteWindowId = currentWin ? currentWin.id : null;
-      const paletteUrl = location.href.split('?')[0];
+  if (openerWindowId === null) {
+    finishLoadingTabs([]);
+    return;
+  }
 
-      function collect(skipPaletteWindow) {
-        const items = [];
-        (windows || []).forEach(function(win) {
-          if (skipPaletteWindow && win.id === paletteWindowId) return;
-          (win.tabs || []).forEach(function(tab) {
-            if (!isDisplayableTab(tab)) return;
-            // Never list the palette itself, whichever window it landed in.
-            if ((tab.url || '').split('?')[0] === paletteUrl) return;
-            items.push({
-              id: tab.id,
-              windowId: win.id,
-              title: tab.title || '',
-              url: tab.url || '',
-              favIconUrl: isSafeFavicon(tab.favIconUrl) ? tab.favIconUrl : null,
-              lastAccessed: tab.lastAccessed,
-              active: tab.id === openerTabId
-            });
-          });
-        });
-        return items;
-      }
+  chrome.tabs.query({ windowId: openerWindowId }, function(tabs) {
+    if (chrome.runtime.lastError) {
+      finishLoadingTabs([]);
+      return;
+    }
 
-      // Skipping the palette's own window is the normal path, but if that
-      // leaves nothing (e.g. getCurrent resolved to a real browser window),
-      // fall back to every tab except the palette page.
-      allTabs = collect(true);
-      if (allTabs.length === 0) allTabs = collect(false);
-
-      tabsLoaded = true;
-      applyOrder();
-      selectedIndex = initialSelection();
-      render();
+    const items = (tabs || []).filter(isDisplayableTab).map(function(tab) {
+      return {
+        id: tab.id,
+        windowId: tab.windowId,
+        title: tab.title || '',
+        url: tab.url || '',
+        favIconUrl: isSafeFavicon(tab.favIconUrl) ? tab.favIconUrl : null,
+        lastAccessed: tab.lastAccessed,
+        active: tab.id === openerTabId
+      };
     });
+    finishLoadingTabs(items);
   });
+}
+
+function finishLoadingTabs(items) {
+  allTabs = items;
+  tabsLoaded = true;
+  applyOrder();
+  selectedIndex = initialSelection();
+  render();
 }
 
 function isPinned(url) {

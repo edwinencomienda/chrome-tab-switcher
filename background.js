@@ -85,31 +85,6 @@ function captureCurrentTabSoon() {
   }, CAPTURE_SPACING_MS);
 }
 
-// Capture the visible tab of each other window, spaced out to stay under the
-// capture rate limit.
-function captureOtherWindows(skipWindowId) {
-  previewsEnabled(function(enabled) {
-    if (!enabled) return;
-    chrome.windows.getAll({ populate: true }, function(windows) {
-      const targets = [];
-      (windows || []).forEach(function(win) {
-        if (win.id === skipWindowId || win.id === paletteWindowId) return;
-        // The palette is a popup window and may not be registered yet.
-        if (win.type && win.type !== 'normal') return;
-        (win.tabs || []).forEach(function(tab) {
-          if (tab.active) targets.push({ windowId: win.id, tabId: tab.id });
-        });
-      });
-      (function next(i) {
-        if (i >= targets.length) return;
-        cacheActiveTabPreview(targets[i].windowId, targets[i].tabId, function() {
-          setTimeout(function() { next(i + 1); }, CAPTURE_SPACING_MS);
-        });
-      })(0);
-    });
-  });
-}
-
 chrome.tabs.onActivated.addListener(captureCurrentTabSoon);
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
   if (changeInfo.status === 'complete' && tab && tab.active) captureCurrentTabSoon();
@@ -225,21 +200,24 @@ function openPaletteWindow() {
     chrome.storage.local.get({ viewMode: 'tiles' }, function(settings) {
       if (chrome.runtime.lastError || !settings
         || (settings.viewMode !== 'tiles' && settings.viewMode !== 'preview')) {
-        createPaletteWindow(openerTabId);
+        createPaletteWindow(openerTabId, openerWindowId);
         return;
       }
       // The activeTab grant from the command covers the opener tab, so this
       // capture works with no extra permission.
       cacheActiveTabPreview(openerWindowId, openerTabId, function() {
-        createPaletteWindow(openerTabId);
-        captureOtherWindows(openerWindowId);
+        createPaletteWindow(openerTabId, openerWindowId);
       });
     });
   });
 }
 
-function createPaletteWindow(openerTabId) {
-  const url = chrome.runtime.getURL('palette.html') + '?opener=' + encodeURIComponent(openerTabId);
+function createPaletteWindow(openerTabId, openerWindowId) {
+  const params = new URLSearchParams({
+    opener: openerTabId,
+    window: openerWindowId
+  });
+  const url = chrome.runtime.getURL('palette.html') + '?' + params.toString();
   const w = 640;
   const h = 520;
 

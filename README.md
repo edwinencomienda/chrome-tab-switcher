@@ -4,7 +4,7 @@
 
 # Tab Window Switcher
 
-A fast keyboard switcher for tabs across all Chrome windows. Search, preview, pin, and open tabs without reaching for the mouse.
+A fast keyboard switcher for tabs in your current Chrome window. Search, preview, pin, and open tabs without reaching for the mouse.
 
 ## Install in Chrome
 
@@ -20,6 +20,7 @@ Chrome 121 or newer is required. Keep the unzipped folder after installation; Ch
 ## Use It
 
 - Press `Cmd+Shift+K` on macOS or `Ctrl+Shift+K` on Windows/Linux.
+- Only tabs from the window where you opened the switcher are shown.
 - Type to search, use the arrow keys to move, and press `Enter` to switch.
 - Tiles are the default view. Click the extension icon to switch to the list or preview-list layout (big thumbnail on the left, details on the right).
 - The switcher remembers where you last dragged it. Use **Reset** under **Window position** in the extension popup to restore the default location.
