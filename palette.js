@@ -78,6 +78,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  if (chrome.tabs.onUpdated) {
+    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+      if (!tab || tab.windowId !== openerWindowId || typeof changeInfo.audible !== 'boolean') return;
+      const item = allTabs.find(function(candidate) { return candidate.id === tabId; });
+      if (!item) return;
+      item.audible = changeInfo.audible;
+      renderAudioTabs();
+    });
+  }
+
   chrome.runtime.onMessage.addListener(function(msg) {
     if (msg.type === 'cycle') {
       cycleCount++;
@@ -147,7 +157,8 @@ function loadTabs() {
         url: tab.url || '',
         favIconUrl: isSafeFavicon(tab.favIconUrl) ? tab.favIconUrl : null,
         lastAccessed: tab.lastAccessed,
-        active: tab.id === openerTabId
+        active: tab.id === openerTabId,
+        audible: tab.audible === true
       };
     });
     finishLoadingTabs(items);
@@ -521,11 +532,81 @@ function buildThumb(item) {
   return thumb;
 }
 
+function buildFavicon(item) {
+  const fav = document.createElement('img');
+  fav.className = 'favicon';
+  // Keep the slot (titles stay aligned) but show nothing when there is no
+  // icon — an empty <img> renders as a broken-image box.
+  if (item.favIconUrl) fav.src = item.favIconUrl;
+  else fav.style.visibility = 'hidden';
+  fav.alt = '';
+  fav.onerror = function() { fav.style.visibility = 'hidden'; };
+  return fav;
+}
+
+function displayHostname(url) {
+  try { return new URL(url).hostname; } catch (_) { return ''; }
+}
+
+function isYouTubeUrl(url) {
+  const host = displayHostname(url).toLowerCase();
+  return host === 'youtu.be'
+    || host === 'youtube.com'
+    || host.endsWith('.youtube.com')
+    || host === 'youtube-nocookie.com'
+    || host.endsWith('.youtube-nocookie.com');
+}
+
+function renderAudioTabs() {
+  const section = document.getElementById('audio-tabs');
+  const list = document.getElementById('audio-list');
+  const count = document.getElementById('audio-count');
+  const audibleTabs = allTabs.filter(function(item) {
+    return item.audible && isYouTubeUrl(item.url);
+  });
+
+  section.hidden = audibleTabs.length === 0;
+  count.textContent = String(audibleTabs.length);
+  list.innerHTML = '';
+
+  audibleTabs.forEach(function(item) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'audio-card';
+    card.title = item.title || item.url || 'YouTube tab';
+    card.setAttribute('aria-label', 'Switch to ' + card.title);
+    card.appendChild(buildFavicon(item));
+
+    const copy = document.createElement('span');
+    copy.className = 'audio-copy';
+    const title = document.createElement('span');
+    title.className = 'audio-title';
+    title.textContent = item.title || '(untitled)';
+    const host = document.createElement('span');
+    host.className = 'audio-host';
+    host.textContent = displayHostname(item.url);
+    copy.appendChild(title);
+    copy.appendChild(host);
+    card.appendChild(copy);
+
+    const bars = document.createElement('span');
+    bars.className = 'audio-bars';
+    bars.setAttribute('aria-hidden', 'true');
+    bars.appendChild(document.createElement('span'));
+    bars.appendChild(document.createElement('span'));
+    bars.appendChild(document.createElement('span'));
+    card.appendChild(bars);
+    card.addEventListener('click', function() { switchToTab(item); });
+    list.appendChild(card);
+  });
+}
+
 function render() {
   const list = document.getElementById('list');
   list.className = viewMode === 'tiles' ? 'tiles' : (viewMode === 'preview' ? 'preview' : '');
   list.innerHTML = '';
   if (!tabsLoaded) return;
+  renderAudioTabs();
   if (filteredTabs.length === 0) {
     list.innerHTML = '<div class="empty">No tabs found</div>';
     return;
@@ -548,13 +629,7 @@ function render() {
       div.appendChild(buildThumb(item));
     }
 
-    const fav = document.createElement('img');
-    fav.className = 'favicon';
-    // Keep the slot (titles stay aligned) but show nothing when there is no
-    // icon — an empty <img> renders as a broken-image box.
-    if (item.favIconUrl) fav.src = item.favIconUrl;
-    else fav.style.visibility = 'hidden';
-    fav.onerror = function() { fav.style.visibility = 'hidden'; };
+    const fav = buildFavicon(item);
 
     const title = document.createElement('span');
     title.className = 'title';
@@ -562,7 +637,7 @@ function render() {
 
     const url = document.createElement('span');
     url.className = 'url';
-    try { url.textContent = new URL(item.url).hostname; } catch (_) { url.textContent = ''; }
+    url.textContent = displayHostname(item.url);
 
     if (viewMode === 'tiles') {
       const meta = document.createElement('div');
@@ -609,6 +684,10 @@ function selectCurrent() {
     closeWindow();
     return;
   }
+  switchToTab(item);
+}
+
+function switchToTab(item) {
   chrome.runtime.sendMessage({ type: 'switch-tab', tabId: item.id, windowId: item.windowId });
 }
 

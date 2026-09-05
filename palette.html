@@ -23,6 +23,8 @@
       --badge-text: #ffffff;
       --pin-scrim: rgba(0, 0, 0, 0.42);
       --pin-scrim-hover: rgba(0, 0, 0, 0.62);
+      --audio-bg: rgba(234, 123, 90, 0.08);
+      --audio-border: rgba(234, 123, 90, 0.28);
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -44,6 +46,8 @@
         --badge-text: #10233a;
         --pin-scrim: rgba(0, 0, 0, 0.5);
         --pin-scrim-hover: rgba(0, 0, 0, 0.7);
+        --audio-bg: rgba(234, 123, 90, 0.12);
+        --audio-border: rgba(234, 123, 90, 0.34);
       }
     }
     html, body {
@@ -72,6 +76,112 @@
       box-sizing: border-box;
     }
     #search::placeholder { color: var(--text-placeholder); }
+    [hidden] { display: none !important; }
+    .audio-tabs {
+      flex: none;
+      padding: 9px 12px 11px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-primary);
+    }
+    .audio-heading {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 2px 7px;
+      color: var(--text-secondary);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .audio-heading svg {
+      width: 12px;
+      height: 12px;
+      color: var(--active-border);
+    }
+    .audio-count {
+      display: grid;
+      place-items: center;
+      min-width: 16px;
+      height: 16px;
+      margin-left: 1px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: var(--audio-bg);
+      color: var(--active-border);
+      box-sizing: border-box;
+      font-size: 9px;
+      letter-spacing: 0;
+    }
+    .audio-list {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .audio-list::-webkit-scrollbar { display: none; }
+    .audio-card {
+      display: flex;
+      flex: 1 0 176px;
+      max-width: 232px;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      padding: 7px 9px;
+      border: 1px solid var(--audio-border);
+      border-radius: 9px;
+      background: var(--audio-bg);
+      color: var(--text-primary);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .audio-card:hover {
+      border-color: var(--active-border);
+      background: var(--bg-hover);
+    }
+    .audio-card:focus-visible {
+      outline: 2px solid var(--active-border);
+      outline-offset: -2px;
+    }
+    .audio-copy {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .audio-title,
+    .audio-host {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .audio-title { font-size: 12px; font-weight: 600; }
+    .audio-host { color: var(--text-secondary); font-size: 10px; }
+    .audio-bars {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: 2px;
+      width: 12px;
+      height: 16px;
+      color: var(--active-border);
+    }
+    .audio-bars span {
+      width: 2px;
+      border-radius: 2px;
+      background: currentColor;
+      animation: audio-level 900ms ease-in-out infinite alternate;
+    }
+    .audio-bars span:nth-child(1) { height: 6px; animation-delay: -600ms; }
+    .audio-bars span:nth-child(2) { height: 13px; animation-delay: -300ms; }
+    .audio-bars span:nth-child(3) { height: 9px; }
+    @keyframes audio-level {
+      from { transform: scaleY(0.45); }
+      to { transform: scaleY(1); }
+    }
     #list {
       flex: 1;
       overflow-y: auto;
@@ -89,7 +199,8 @@
       transition: background 110ms ease, border-color 110ms ease;
     }
     @media (prefers-reduced-motion: reduce) {
-      .item, #list.tiles .item, .thumb img.shot { transition: none !important; }
+      .item, #list.tiles .item, .thumb img.shot, .audio-card { transition: none !important; }
+      .audio-bars span { animation: none !important; }
     }
     .item:hover {
       background: var(--bg-hover);
@@ -362,6 +473,16 @@
 <body>
   <div id="modal">
     <input type="text" id="search" placeholder="Search tabs..." autofocus>
+    <section class="audio-tabs" id="audio-tabs" aria-labelledby="audio-tabs-label" hidden>
+      <div class="audio-heading">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+          <path d="M3 10V6M7 13V3M11 11V5M15 9V7"/>
+        </svg>
+        <span id="audio-tabs-label">Playing on YouTube</span>
+        <span class="audio-count" id="audio-count"></span>
+      </div>
+      <div class="audio-list" id="audio-list"></div>
+    </section>
     <div id="list"></div>
   </div>
   <script src="palette.js"></script>
